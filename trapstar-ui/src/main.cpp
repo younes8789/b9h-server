@@ -1,14 +1,13 @@
+// الـ Includes الصحيحة ديال open.mp SDK
 #include <sdk.hpp>
+#include <Server/Components/TextDraws/textdraws.hpp>
 
 // ============================================================
-//  Trapstar FiveM-Style UI - open.mp Component
-//  Author: B9h Crew
+//  المؤشرات الـ Global (بدون Omp:: namespace — ما عندوش)
 // ============================================================
-
-// المؤشرات (Pointers) ديال الـ TextDraws
 static ITextDraw* trapBackground = nullptr;
 static ITextDraw* trapLineBorder = nullptr;
-static ITextDraw* trapText      = nullptr;
+static ITextDraw* trapText       = nullptr;
 
 // ============================================================
 //  دالة إنشاء الـ UI
@@ -17,7 +16,7 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
 {
     if (!td) return;
 
-    // 1. الـ Background: مستطيل زجاجي أسود شفاف فوق الشاشة
+    // 1. Background زجاجي شفاف
     trapBackground = td->create(Vector2(200.0f, 15.0f), "_");
     if (trapBackground)
     {
@@ -29,7 +28,7 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
         trapBackground->setOutline(0);
     }
 
-    // 2. الـ Bottom Border Line: شريط أحمر رقيق تحت الـ Box
+    // 2. خط أحمر رقيق
     trapLineBorder = td->create(Vector2(200.0f, 41.0f), "_");
     if (trapLineBorder)
     {
@@ -41,7 +40,7 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
         trapLineBorder->setOutline(0);
     }
 
-    // 3. النص الأساسي: "T R A P S T A R" بـ لون أحمر على "STAR"
+    // 3. النص الأساسي
     trapText = td->create(Vector2(320.0f, 18.0f), "T R A P {FF0055}S T A R");
     if (trapText)
     {
@@ -56,36 +55,18 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
 }
 
 // ============================================================
-//  إظهار الـ UI لجميع اللاعبين
-// ============================================================
-static void ShowTrapstarToAll(IPlayerPool& players)
-{
-    if (!trapBackground || !trapLineBorder || !trapText) return;
-
-    for (IPlayer* player : players.entries())
-    {
-        if (!player) continue;
-        trapBackground->showForPlayer(*player);
-        trapLineBorder->showForPlayer(*player);
-        trapText->showForPlayer(*player);
-    }
-}
-
-// ============================================================
 //  الـ Component الرئيسي
 // ============================================================
-struct TrapstarUIComponent final : public IComponent, public PlayerConnectEventHandler
+struct TrapstarComponent final
+    : public IComponent
+    , public PlayerConnectEventHandler
 {
-    PROVIDE_UID(/* UID فريد */ 0xB9C1AB7E3F5D8A12ULL);
+    PROVIDE_UID(0xB9C1AB7E3F5D8A12ULL);
 
     ICore*               core_      = nullptr;
     ITextDrawsComponent* textdraws_ = nullptr;
-    IPlayerPool*         players_   = nullptr;
 
-    StringView componentName() const override
-    {
-        return "TrapstarUI";
-    }
+    StringView componentName() const override { return "trapstar"; }
 
     SemanticVersion componentVersion() const override
     {
@@ -94,8 +75,7 @@ struct TrapstarUIComponent final : public IComponent, public PlayerConnectEventH
 
     void onLoad(ICore* c) override
     {
-        core_    = c;
-        players_ = &c->getPlayers();
+        core_ = c;
     }
 
     void onInit(IComponentList* components) override
@@ -103,56 +83,54 @@ struct TrapstarUIComponent final : public IComponent, public PlayerConnectEventH
         textdraws_ = components->queryComponent<ITextDrawsComponent>();
         if (!textdraws_)
         {
-            core_->logLn(LogLevel::Error, "[TrapstarUI] TextDraws component not found!");
+            core_->logLn(LogLevel::Error, "[trapstar] TextDraws component not found!");
             return;
         }
 
-        // ننشئوا الـ TextDraws عند إقلاع السيرفر
         CreateTrapstarUI(textdraws_);
 
-        // نشترك في حدث connection ديال اللعابة
-        players_->getPlayerConnectDispatcher().addEventHandler(this);
-
-        core_->logLn(LogLevel::Message, "[TrapstarUI] Loaded successfully!");
+        core_->getPlayers().getPlayerConnectDispatcher().addEventHandler(this);
+        core_->logLn(LogLevel::Message, "[trapstar] Loaded OK!");
     }
 
     void onReady() override
     {
-        // السيرفر جاهز تماماً، نظهروا الـ UI لكاع اللاعبين الموجودين
-        if (players_) ShowTrapstarToAll(*players_);
+        // إظهار الـ UI لكاع اللاعبين الحاليين
+        for (IPlayer* player : core_->getPlayers().entries())
+        {
+            if (!player) continue;
+            if (trapBackground) trapBackground->showForPlayer(*player);
+            if (trapLineBorder) trapLineBorder->showForPlayer(*player);
+            if (trapText)       trapText->showForPlayer(*player);
+        }
     }
 
-    void onFree(IComponent* component) override {}
-
-    void free() override
-    {
-        if (players_)
-            players_->getPlayerConnectDispatcher().removeEventHandler(this);
-
-        trapBackground = nullptr;
-        trapLineBorder = nullptr;
-        trapText       = nullptr;
-
-        delete this;
-    }
-
-    void reset() override {}
-
-    // ============================================================
-    //  كيفاش نظهروا الـ UI لكل لاعب جديد كيدخل
-    // ============================================================
+    // كل لاعب جديد يدخل يشوف الـ UI تلقائياً
     void onPlayerConnect(IPlayer& player) override
     {
         if (trapBackground) trapBackground->showForPlayer(player);
         if (trapLineBorder) trapLineBorder->showForPlayer(player);
         if (trapText)       trapText->showForPlayer(player);
     }
+
+    void onFree(IComponent*) override {}
+
+    void free() override
+    {
+        core_->getPlayers().getPlayerConnectDispatcher().removeEventHandler(this);
+        trapBackground = nullptr;
+        trapLineBorder = nullptr;
+        trapText       = nullptr;
+        delete this;
+    }
+
+    void reset() override {}
 };
 
 // ============================================================
-//  Entry Point ديال الـ Component (يتحمل من open.mp تلقائياً)
+//  Entry Point — open.mp يحمله تلقائياً
 // ============================================================
 COMPONENT_ENTRY_POINT()
 {
-    return new TrapstarUIComponent();
+    return new TrapstarComponent();
 }
