@@ -15,7 +15,7 @@ include(FetchContent)
 FetchContent_Declare(
     omp-sdk
     GIT_REPOSITORY https://github.com/openmultiplayer/open.mp-sdk.git
-    GIT_TAG        main
+    GIT_TAG        master
 )
 FetchContent_MakeAvailable(omp-sdk)
 
