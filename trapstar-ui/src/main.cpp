@@ -1,9 +1,8 @@
-// الـ Includes الصحيحة ديال open.mp SDK
 #include <sdk.hpp>
 #include <Server/Components/TextDraws/textdraws.hpp>
 
 // ============================================================
-//  المؤشرات الـ Global (بدون Omp:: namespace — ما عندوش)
+//  المؤشرات الـ Global
 // ============================================================
 static ITextDraw* trapBackground = nullptr;
 static ITextDraw* trapLineBorder = nullptr;
@@ -11,6 +10,7 @@ static ITextDraw* trapText       = nullptr;
 
 // ============================================================
 //  دالة إنشاء الـ UI
+//  الـ API الصحيحة مأخوذة مباشرة من textdraws.hpp
 // ============================================================
 static void CreateTrapstarUI(ITextDrawsComponent* td)
 {
@@ -21,9 +21,9 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
     if (trapBackground)
     {
         trapBackground->setTextSize(Vector2(440.0f, 28.0f));
-        trapBackground->setAlignment(TextDrawAlignment::Left);
-        trapBackground->setUseBox(true);
-        trapBackground->setBoxColour(Colour::FromRGBA(0x0A0A0A99));
+        trapBackground->setAlignment(TextDrawAlignment_Left);   // TextDrawAlignmentTypes enum
+        trapBackground->useBox(true);                           // useBox() مش setUseBox()
+        trapBackground->setBoxColour(Colour::FromRGBA(0x0A0A0A99)); // setBoxColour() British spelling
         trapBackground->setShadow(0);
         trapBackground->setOutline(0);
     }
@@ -33,8 +33,8 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
     if (trapLineBorder)
     {
         trapLineBorder->setTextSize(Vector2(440.0f, 2.0f));
-        trapLineBorder->setAlignment(TextDrawAlignment::Left);
-        trapLineBorder->setUseBox(true);
+        trapLineBorder->setAlignment(TextDrawAlignment_Left);
+        trapLineBorder->useBox(true);
         trapLineBorder->setBoxColour(Colour::FromRGBA(0xFF0055FF));
         trapLineBorder->setShadow(0);
         trapLineBorder->setOutline(0);
@@ -44,8 +44,8 @@ static void CreateTrapstarUI(ITextDrawsComponent* td)
     trapText = td->create(Vector2(320.0f, 18.0f), "T R A P {FF0055}S T A R");
     if (trapText)
     {
-        trapText->setAlignment(TextDrawAlignment::Center);
-        trapText->setFont(TextDrawFont::Font2);
+        trapText->setAlignment(TextDrawAlignment_Center);
+        trapText->setStyle(TextDrawStyle_FontBankGothic);       // setStyle() + TextDrawStyle enum
         trapText->setLetterSize(Vector2(0.4f, 1.6f));
         trapText->setColour(Colour::FromRGBA(0xF5F5F5FF));
         trapText->setShadow(0);
@@ -95,7 +95,7 @@ struct TrapstarComponent final
 
     void onReady() override
     {
-        // إظهار الـ UI لكاع اللاعبين الحاليين
+        // إظهار الـ UI لكاع اللاعبين الموجودين
         for (IPlayer* player : core_->getPlayers().entries())
         {
             if (!player) continue;
@@ -117,7 +117,8 @@ struct TrapstarComponent final
 
     void free() override
     {
-        core_->getPlayers().getPlayerConnectDispatcher().removeEventHandler(this);
+        if (core_)
+            core_->getPlayers().getPlayerConnectDispatcher().removeEventHandler(this);
         trapBackground = nullptr;
         trapLineBorder = nullptr;
         trapText       = nullptr;
