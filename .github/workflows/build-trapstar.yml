@@ -1,0 +1,64 @@
+name: Build trapstar.so
+
+on:
+  push:
+    paths:
+      - 'trapstar-ui/**'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build trapstar.so (Linux x86)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            g++-multilib \
+            gcc-multilib \
+            git \
+            make
+
+      - name: Configure CMake
+        run: |
+          cmake -S trapstar-ui -B trapstar-ui/build \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build trapstar-ui/build --config Release
+
+      - name: Upload trapstar.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: trapstar-so
+          path: trapstar-ui/build/trapstar.so
+
+  build-windows:
+    name: Build trapstar.dll (Windows x86)
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: |
+          cmake -S trapstar-ui -B trapstar-ui/build-win `
+            -A Win32 `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build trapstar-ui/build-win --config Release
+
+      - name: Upload trapstar.dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: trapstar-dll
+          path: trapstar-ui/build-win/Release/trapstar.dll
