@@ -62,8 +62,7 @@ struct TrapstarComponent final
 {
     PROVIDE_UID(0xB9C1AB7E3F5D8A12ULL);
 
-    ICore*           core_       = nullptr;
-    IComponentList*  components_ = nullptr;  // نحفظوه باش نستعملوه فـ onReady
+    ICore*               core_      = nullptr;
     ITextDrawsComponent* textdraws_ = nullptr;
 
     StringView componentName() const override { return "trapstar"; }
@@ -80,19 +79,17 @@ struct TrapstarComponent final
 
     void onInit(IComponentList* components) override
     {
-        // نحفظوا فقط — ما نقدروش نجيبوا TextDraws هنا غير مازال ما تحملوش
-        components_ = components;
         core_->getPlayers().getPlayerConnectDispatcher().addEventHandler(this);
         core_->logLn(LogLevel::Message, "[trapstar] Initialized, waiting for onReady...");
     }
 
     void onReady() override
     {
-        // هنا كاع الـ components تحملوا — دابا نجيبوا TextDraws
-        textdraws_ = components_->queryComponent<ITextDrawsComponent>();
+        // نستعملوا core_->getComponents() لي فيه كاع الـ built-in components
+        textdraws_ = core_->getComponents().queryComponent<ITextDrawsComponent>();
         if (!textdraws_)
         {
-            core_->logLn(LogLevel::Error, "[trapstar] TextDraws component not found in onReady!");
+            core_->logLn(LogLevel::Error, "[trapstar] TextDraws component not found via core_->getComponents()!");
             return;
         }
 
